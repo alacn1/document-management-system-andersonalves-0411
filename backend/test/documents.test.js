@@ -120,6 +120,61 @@ test('faz download dos bytes originais com nome seguro e tipo binário', async (
   assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes);
 });
 
+test('integra upload, listagem por usuário e download sem misturar arquivos com o mesmo nome', async () => {
+  const owner = randomUUID();
+  const otherOwner = randomUUID();
+  const bytes = Buffer.from([0, 1, 128, 255, 13, 10]);
+  const otherBytes = Buffer.from('Documento de outro usuário');
+  const name = 'compartilhado.bin';
+
+  const initialList = await request('/documents', owner);
+  assert.equal(initialList.status, 200);
+  assert.deepEqual(await initialList.json(), { documents: [] });
+
+  const uploaded = await upload(owner, bytes, name);
+  assert.equal(uploaded.status, 201);
+  const document = await uploaded.json();
+  const otherUploaded = await upload(otherOwner, otherBytes, name);
+  assert.equal(otherUploaded.status, 201);
+  const otherDocument = await otherUploaded.json();
+  assert.notEqual(document.id, otherDocument.id);
+
+  for (const [user, expectedDocument, expectedBytes] of [
+    [owner, document, bytes],
+    [otherOwner, otherDocument, otherBytes],
+  ]) {
+    const listed = await request('/documents', user);
+    assert.equal(listed.status, 200);
+    const { documents } = await listed.json();
+    assert.deepEqual(documents, [expectedDocument]);
+    assert.equal(documents[0].originalName, name);
+    assert.equal(documents[0].owner, user);
+    assert.equal(documents[0].size, expectedBytes.length);
+
+    const downloaded = await request(`/documents/${documents[0].id}/download`, user);
+    assert.equal(downloaded.status, 200);
+    assert.match(downloaded.headers.get('content-disposition'), /^attachment; filename="compartilhado.bin"/);
+    assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()), expectedBytes);
+  }
+});
+
+test('upload rejeitado não altera a listagem nem o download de um documento existente', async () => {
+  const owner = randomUUID();
+  const content = 'Documento preservado';
+  const uploaded = await upload(owner, content);
+  assert.equal(uploaded.status, 201);
+  const document = await uploaded.json();
+
+  await expectError(await upload(owner, ''), 400, 'FILE_REQUIRED');
+
+  const listed = await request('/documents', owner);
+  assert.equal(listed.status, 200);
+  assert.deepEqual(await listed.json(), { documents: [document] });
+  const downloaded = await request(`/documents/${document.id}/download`, owner);
+  assert.equal(downloaded.status, 200);
+  assert.equal(await downloaded.text(), content);
+});
+
 test('nega download de outro usuário, id inexistente e arquivo removido com o mesmo erro', async () => {
   const owner = randomUUID();
   const document = await (await upload(owner)).json();
