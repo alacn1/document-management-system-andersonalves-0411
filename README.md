@@ -1,80 +1,37 @@
-# Document Management System com GitHub Copilot
+<div align="center">
 
-<img src="https://octodex.github.com/images/Professortocat_v2.png" align="right" height="200px" />
+# 🎉 Congratulations Copilot! 🎉
 
-Hey alacn1!
+<img src="https://octodex.github.com/images/welcometocat.png" height="200px" />
 
-Mona here. I'm done preparing your exercise. Hope you enjoy! 💚
+### 🌟 You've successfully completed the exercise! 🌟
 
-Remember, it's self-paced so feel free to take a break! ☕️
+## 🚀 Share Your Success!
 
-[![](https://img.shields.io/badge/Go%20to%20Exercise-%E2%86%92-1f883d?style=for-the-badge&logo=github&labelColor=197935)](https://github.com/alacn1/document-management-system-andersonalves-0411/issues/1)
+**Show off your new skills and inspire others!**
+
+<a href="https://twitter.com/intent/tweet?text=I%20just%20completed%20the%20%22Document%20Management%20System%20com%20GitHub%20Copilot%22%20GitHub%20Skills%20hands-on%20exercise!%20%F0%9F%8E%89%0A%0Ahttps%3A%2F%2Fgithub.com%2Falacn1%2Fdocument-management-system-andersonalves-0411%0A%0A%23GitHubSkills%20%23OpenSource%20%23GitHubLearn" target="_blank" rel="noopener noreferrer">
+  <img src="https://img.shields.io/badge/Share%20on%20X-1da1f2?style=for-the-badge&logo=x&logoColor=white" alt="Share on X" />
+</a>
+<a href="https://bsky.app/intent/compose?text=I%20just%20completed%20the%20%22Document%20Management%20System%20com%20GitHub%20Copilot%22%20GitHub%20Skills%20hands-on%20exercise!%20%F0%9F%8E%89%0A%0Ahttps%3A%2F%2Fgithub.com%2Falacn1%2Fdocument-management-system-andersonalves-0411%0A%0A%23GitHubSkills%20%23OpenSource%20%23GitHubLearn" target="_blank" rel="noopener noreferrer">
+  <img src="https://img.shields.io/badge/Share%20on%20Bluesky-0085ff?style=for-the-badge&logo=bluesky&logoColor=white" alt="Share on Bluesky" />
+</a>
+<a href="https://www.linkedin.com/feed/?shareActive=true&text=I%20just%20completed%20the%20%22Document%20Management%20System%20com%20GitHub%20Copilot%22%20GitHub%20Skills%20hands-on%20exercise!%20%F0%9F%8E%89%0A%0Ahttps%3A%2F%2Fgithub.com%2Falacn1%2Fdocument-management-system-andersonalves-0411%0A%0A%23GitHubSkills%20%23OpenSource%20%23GitHubLearn" target="_blank" rel="noopener noreferrer">
+  <img src="https://img.shields.io/badge/Share%20on%20LinkedIn-0077b5?style=for-the-badge&logo=linkedin&logoColor=white" alt="Share on LinkedIn" />
+</a>
+
+### 🎯 What's Next?
+
+**Keep the momentum going!**
+
+[![](https://img.shields.io/badge/Return%20to%20Exercise-%E2%86%92-1f883d?style=for-the-badge&logo=github&labelColor=197935)](https://github.com/alacn1/document-management-system-andersonalves-0411/issues/1)
+[![GitHub Skills](https://img.shields.io/badge/Explore%20GitHub%20Skills-000000?style=for-the-badge&logo=github&logoColor=white)](https://learn.github.com/skills)
+
+*There's no better way to learn than building things!* 🚀
+
+</div>
 
 ---
 
-## Backend DMS
-
-```sh
-cd backend
-npm install
-npm start
-```
-
-O backend usa JavaScript CommonJS e separa rotas, controllers, services e
-repositories em `backend/src`. Execute os testes com `npm test` na pasta `backend`.
-
-- `GET /health`: verificação de saúde.
-- `POST /upload`: um arquivo não vazio no campo multipart `file`; retorna `201`.
-- `GET /documents`: retorna `{ "documents": [...] }` do proprietário.
-- `GET /documents/:id/download`: baixa os bytes originais pelo UUID v4.
-
-As rotas de documentos exigem `X-User-Id`. Esse cabeçalho define apenas o escopo
-do MVP, **não é autenticação**. Download de outro proprietário ou de documento
-inexistente retorna `404`. Os contratos completos estão na
-[especificação](docs/specs/dms-spec.md).
-
-```sh
-curl -H 'X-User-Id: demo' -F 'file=@./relatorio.pdf' http://localhost:3000/upload
-curl -H 'X-User-Id: demo' http://localhost:3000/documents
-curl -H 'X-User-Id: demo' -OJ http://localhost:3000/documents/UUID/download
-```
-
-Configuração via ambiente:
-
-| Variável | Padrão | Descrição |
-| --- | --- | --- |
-| `PORT` | `3000` | Porta HTTP. |
-| `UPLOAD_MAX_BYTES` | `10485760` | Limite inclusivo de bytes por arquivo (10 MiB); inteiro positivo. |
-| `STORAGE_DIR` | `storage` | Diretório local, relativo à raiz de `backend` ou absoluto. |
-
-O diretório padrão é `backend/storage`, criado automaticamente no primeiro
-upload. Os arquivos são gravados por Multer `diskStorage`, com nomes gerados
-pelo servidor. Metadados ficam somente em memória: reiniciar o processo perde
-a listagem, mas não remove os arquivos do disco. Não há armazenamento externo.
-
-## Frontend DMS
-
-Com o backend em execução na porta 3000, abra outro terminal:
-
-```sh
-cd frontend
-npm install
-npm run dev
-```
-
-Acesse `http://localhost:5173`, informe um usuário e clique em **Carregar
-documentos**. Escolha um arquivo não vazio e clique em **Enviar**; a lista é
-atualizada após o envio. Use **Baixar** para salvar o arquivo com o nome original
-ou **Atualizar lista** para consultar novamente. A interface informa carregamento
-e erros em cada operação.
-
-O cliente em `frontend/src/services/api.js` usa `fetch` com o prefixo `/api` e
-envia `X-User-Id` em upload, listagem e download. O proxy de desenvolvimento do
-Vite remove o prefixo e encaminha as chamadas para `http://localhost:3000`.
-Em produção, configure o servidor HTTP para encaminhar `/api` ao backend com
-a mesma reescrita; o build estático não inclui o proxy de desenvolvimento.
-
-Execute `npm test` na pasta `frontend` para testar o cliente de API e
-`npm run build` para gerar o build de produção.
-
 &copy; 2025 GitHub &bull; [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/code_of_conduct.md) &bull; [MIT License](https://gh.io/mit)
+
