@@ -1,47 +1,64 @@
 const { randomUUID } = require('node:crypto');
 const repository = require('../repositories/documents.repository');
 const { uploadMaxBytes } = require('../config');
+const fileRequiredMessage = 'Envie um arquivo não vazio no campo file.';
+
+function serviceError(code, message) {
+  return Object.assign(new Error(message), { code });
+}
+
+function fileRequiredError() {
+  return serviceError('FILE_REQUIRED', fileRequiredMessage);
+}
 
 function publicDocument({ id, originalName, size, uploadedAt, owner }) {
   return { id, originalName, size, uploadedAt, owner };
 }
 
-async function createDocument(file, owner) {
+function requireFile(file) {
   if (!file) {
-    throw Object.assign(new Error('Envie um arquivo não vazio no campo file.'), {
-      code: 'FILE_REQUIRED',
-    });
+    throw fileRequiredError();
   }
+}
+
+function validateFile(file) {
+  if (file.size === 0) {
+    throw fileRequiredError();
+  }
+  if (file.size > uploadMaxBytes) {
+    throw serviceError('FILE_TOO_LARGE', 'O arquivo excede o limite de upload permitido.');
+  }
+}
+
+function createDocumentMetadata(file, owner) {
+  return {
+    id: randomUUID(),
+    originalName: file.originalname,
+    size: file.size,
+    uploadedAt: new Date().toISOString(),
+    owner,
+    storageName: file.filename,
+  };
+}
+
+async function removeRejectedUpload(file) {
+  try {
+    await repository.removeFile(file.filename);
+  } catch (cleanupError) {
+    console.error('Falha ao remover arquivo após upload rejeitado.', cleanupError);
+  }
+}
+
+async function createDocument(file, owner) {
+  requireFile(file);
 
   try {
-    if (file.size === 0) {
-      throw Object.assign(new Error('Envie um arquivo não vazio no campo file.'), {
-        code: 'FILE_REQUIRED',
-      });
-    }
-    if (file.size > uploadMaxBytes) {
-      throw Object.assign(new Error('O arquivo excede o limite de upload permitido.'), {
-        code: 'FILE_TOO_LARGE',
-      });
-    }
-
-    const document = {
-      id: randomUUID(),
-      originalName: file.originalname,
-      size: file.size,
-      uploadedAt: new Date().toISOString(),
-      owner,
-      storageName: file.filename,
-    };
-
+    validateFile(file);
+    const document = createDocumentMetadata(file, owner);
     await repository.save(document);
     return publicDocument(document);
   } catch (error) {
-    try {
-      await repository.removeFile(file.filename);
-    } catch (cleanupError) {
-      console.error('Falha ao remover arquivo após upload rejeitado.', cleanupError);
-    }
+    await removeRejectedUpload(file);
     throw error;
   }
 }
@@ -54,9 +71,7 @@ async function listDocuments(owner) {
 async function getDownload(id, owner) {
   const document = await repository.findById(id);
   if (!document || document.owner !== owner) {
-    throw Object.assign(new Error('Documento não encontrado.'), {
-      code: 'DOCUMENT_NOT_FOUND',
-    });
+    throw serviceError('DOCUMENT_NOT_FOUND', 'Documento não encontrado.');
   }
 
   return {
